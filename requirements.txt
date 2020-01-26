@@ -1,0 +1,7 @@
+Flask==1.1.1
+Flask-Bootstrap==3.3.7.1
+gunicorn==20.0.4
+Jinja2==2.10.3
+PyYaml==5.3
+Werkzeug==0.16.0
+wrapt==1.11.2

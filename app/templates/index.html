@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+<!-- {% import 'bootstrap/wtf.html' as wtf %} -->
+
+{% block app_content %}
+    <h1>Welcome to {{ title }}</h1>
+    <div class='jumbotron'>
+    <p>
+        Local server time is {{ resp.now }}<br>
+        The server ip is: {{ resp.local_ip }}<br>
+        Running in {{ resp.container_name }}<br>
+        Parameter secret key is {{ resp.secret}}<br>
+    </p>
+    <p> 
+        Your request came from: {{ resp.remote_ip }}<br>
+        The client ip is: {{ resp.client_ip }}
+
+    </p>
+    </div>
+{% endblock %}
