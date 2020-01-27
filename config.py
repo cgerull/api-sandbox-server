@@ -10,3 +10,7 @@ class Config(object):
     ACCESS_LOG = os.environ.get('ACCESS_LOG') or './access.log'
     ERROR_LOG = os.environ.get('ERROR_LOG') or './error.log'
     LOG_LINES = 30
+    REDIS_SERVER = os.environ.get('REDIS_SERVER') or ''
+    REDIS_PORT = os.environ.get('REDIS_PORT') or 6379
+    REDIS_HTML_COUNTER = "api_srv_html_counter"
+    REDIS_API_COUNTER = "api_srv_counter"

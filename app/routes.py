@@ -8,6 +8,7 @@ from datetime import datetime
 import socket
 import os
 import yaml
+from app.redis_connection import get_redis
 
 # Modules constants
 secret_file = '/run/secrets/my_secret_key'
@@ -17,6 +18,8 @@ srv_config = {
     'footer': 'Default configuration'
 }
 localhost = socket.gethostname()
+my_redis = get_redis()
+
 
 #
 # HTML page
@@ -25,11 +28,17 @@ localhost = socket.gethostname()
 def index():
     """Build response data and send page to requester."""
     read_config(config_file, srv_config)
+    page_view = 0
     response_data = build_response_data()
+    if my_redis:
+        increment_redis_counter(my_redis, app.config['REDIS_HTML_COUNTER'])
+        page_view = int(my_redis.get(app.config['REDIS_HTML_COUNTER']))
+    
     resp = make_response(render_template('index.html',
                         title=srv_config['title'],
                         footer=srv_config['footer'],
-                        resp=response_data))
+                        resp=response_data,
+                        page_view=page_view))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
@@ -69,7 +78,9 @@ def api_config():
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
-
+#
+# Utiliy functions
+# #################################################################################
 def build_response_data():
     """
     Build a dictionary with timestamp, server ip,
@@ -124,12 +135,23 @@ def read_config(config_file, srv_config):
 def tail_logfile(logfile=''):
     """Read n lines of the logfile"""
     result = "Can't read logfile: {}".format(logfile)
-    lines = 40
-    with open(logfile) as f:
-        # for line in (f.readlines()[-lines:]):
-        #     print(line)
-        result = ''.join(f.readlines()[-lines:])
+    lines = app.config['LOG_LINES']
+    try:
+        with open(logfile) as f:
+            # for line in (f.readlines()[-lines:]):
+            #     print(line)
+            result = ''.join(f.readlines()[-lines:])
+    except Exception as exc:
+        print("Can't open logfile. {}".format(exc))
     return result
+
+
+def increment_redis_counter(r, counter = 'counter'):
+    if r.get(counter):
+        c = int(r.get(counter)) + 1
+        r.set(counter, c)
+    else:
+        r.set(counter, "1")
 
 
 def old_tail_logfile(logfile=''):
