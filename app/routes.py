@@ -152,31 +152,3 @@ def increment_redis_counter(r, counter = 'counter'):
         r.set(counter, c)
     else:
         r.set(counter, "1")
-
-
-def old_tail_logfile(logfile=''):
-    """Read n lines of the logfile"""
-    result = "Can't read logfile: {}".format(logfile)
-    try:
-        bufsize = 4096
-
-        lines = 5
-        logfsize = os.stat(logfile).st_size
-        print("try to open logfile")
-        iter = 0
-        with open(logfile) as f:
-            if bufsize > logfsize:
-                bufsize = logfsize-1
-            data = []
-            while True:
-                iter +=1
-                print('reading logfile: {} {} {} {} {}'.format(iter, len(data), logfsize, bufsize, f.tell()))
-                f.seek(logfsize-bufsize*iter)
-                data.extend(f.readlines())
-                if len(data) >= lines or f.tell() == 0:
-                    result = ''.join(data[-lines:])
-                    break
-    except Exception as e:
-        result.join("; Caught exception {}".format(e))
-    return result
-
