@@ -1,1 +1,1 @@
-web: gunicorn --workers 2 --access-logfile $ACCESS_LOG --error-logfile $ERR_LOG wsgi:app
+web: gunicorn --workers 2 wsgi:app
