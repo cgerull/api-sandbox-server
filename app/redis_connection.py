@@ -3,8 +3,8 @@ from app import app
 
 def get_redis():
     r = None
-    if app.config["REDIS_SERVER"]:
-        r = redis.Redis(app.config["REDIS_SERVER"], app.config["REDIS_PORT"])
+    if app.config["REDIS_URL"]:
+        r = redis.from_url(os.environ.get("REDIS_URL"))
     return r
 
 def increment_redis_counter(r, counter = 'counter'):
