@@ -4,12 +4,12 @@ Route module for timeconverter web api
 from app import app
 from flask import (request, jsonify, render_template, redirect,
                    url_for, flash, make_response)
+
 from datetime import datetime
 import socket
 import os
 import yaml
-# import app.redis_tools
-# from app.redis_connection import get_redis
+
 from app.redis_tools import get_redis
 from app.redis_tools import increment_redis_counter
 
@@ -50,8 +50,8 @@ def index():
         page_view = int(my_redis.get(app.config['REDIS_HTML_COUNTER']))
     
     resp = make_response(render_template('index.html',
-                        title=srv_config['title'],
-                        footer=srv_config['footer'],
+                        title=app.config['APP_NAME'],
+                        footer=app.config['APP_FOOTER'],
                         resp=response_data,
                         page_view=page_view))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
@@ -69,8 +69,8 @@ def logs():
     # read_config(config_file, srv_config)
     a_log = tail_logfile(app.config['ACCESS_LOG'])
     resp = make_response(render_template('logs.html',
-                        title=srv_config['title'],
-                        footer=srv_config['footer'],
+                        title=app.config['APP_NAME'],
+                        footer=app.config['APP_FOOTER'],
                         a_log=a_log))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
@@ -161,18 +161,6 @@ def get_secret_key():
     return secret
 
 
-# def read_config(srv_config):
-#     """
-#     Read configuration from file and update srv_config dictionary.
-#     If no config file exists, a default configuration is used.
-
-#     Args:
-#         configuration file
-#         configuration dictonary
-#     """
-#     for key in app.config:
-#         srv_config[key] = app.config[key]
-#         print("app.config[{}]: {}".format(key, srv_config[key]))
 def jsonify_config():
     """
     Return:
@@ -183,14 +171,6 @@ def jsonify_config():
         a_config[key] = str(app.config[key])
         # print("app.config[{}]: {}".format(key, a_config[key]))
     return jsonify(a_config)
-
-    # try:
-    #     with open(config_file, 'r') as stream:
-    #         config_data = (yaml.safe_load(stream))
-    #         for key in config_data.keys():
-    #             srv_config[key] = config_data[key]   
-    # except Exception as exc:
-    #     print("Can't read configuration. {}".format(exc))
 
 
 def tail_logfile(logfile = None):
@@ -209,17 +189,7 @@ def tail_logfile(logfile = None):
     if logfile: 
         try:
             with open(logfile) as f:
-                # for line in (f.readlines()[-lines:]):
-                #     print(line)
                 result = ''.join(f.readlines()[-lines:])
         except Exception as exc:
             print("Can't open logfile. {}".format(exc))
     return result
-
-
-# def increment_redis_counter(r, counter = 'counter'):
-#     if r.get(counter):
-#         c = int(r.get(counter)) + 1
-#         r.set(counter, c)
-#     else:
-#         r.set(counter, "1")
