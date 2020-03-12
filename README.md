@@ -15,3 +15,6 @@ Collection of containers for API and deployment testing.
     - logging / diagnostic
     - API
  
+
+---
+![Docker Release Image](https://github.com/cgerull/api-sandbox-server/workflows/Docker%20Release%20Image/badge.svg?branch=master)
