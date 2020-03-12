@@ -13,7 +13,11 @@
     <p> 
         Your request came from: {{ resp.remote_ip }}<br>
         The client ip is: {{ resp.client_ip }}
-
     </p>
+    {% if 0 < page_view %}
+    <p>
+        Page views: {{ page_view }}
+    </p>
+    {% endif %}
     </div>
 {% endblock %}

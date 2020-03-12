@@ -14,6 +14,4 @@ Collection of containers for API and deployment testing.
     - testing
     - logging / diagnostic
     - API
- - one load generator for performance tests and demo
- - monitoring suite with elastic stack, prometheus and grafana
-  
+ 

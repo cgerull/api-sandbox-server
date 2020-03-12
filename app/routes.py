@@ -4,10 +4,14 @@ Route module for timeconverter web api
 from app import app
 from flask import (request, jsonify, render_template, redirect,
                    url_for, flash, make_response)
+
 from datetime import datetime
 import socket
 import os
 import yaml
+
+from app.redis_tools import get_redis
+from app.redis_tools import increment_redis_counter
 
 # Modules constants
 secret_file = '/run/secrets/my_secret_key'
@@ -17,19 +21,39 @@ srv_config = {
     'footer': 'Default configuration'
 }
 localhost = socket.gethostname()
+my_redis = get_redis()
+
 
 #
-# HTML page
+# HTML endpoints
+##############################################################################
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    """Build response data and send page to requester."""
-    read_config(config_file, srv_config)
+    """
+    Respond as echo with:
+        timestamp,
+        local_ip,
+        container_name / hostname,
+        secret,
+        remote_ip: requester ip or proxy ip,
+        client_ip
+
+    If a Redis server is defined, keeps a dynamic count of pageviews 
+    for HTML and API echo requests.
+    """
+    # read_config(srv_config)
+    page_view = 0
     response_data = build_response_data()
+    if my_redis:
+        increment_redis_counter(my_redis, app.config['REDIS_HTML_COUNTER'])
+        page_view = int(my_redis.get(app.config['REDIS_HTML_COUNTER']))
+    
     resp = make_response(render_template('index.html',
-                        title=srv_config['title'],
-                        footer=srv_config['footer'],
-                        resp=response_data))
+                        title=app.config['APP_NAME'],
+                        footer=app.config['APP_FOOTER'],
+                        resp=response_data,
+                        page_view=page_view))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
@@ -38,38 +62,68 @@ def index():
 # Logs page
 @app.route('/logs', methods=['GET'])
 def logs():
-    """Gather log data and send page to requester."""
-    read_config(config_file, srv_config)
+    """
+    If log files are written locally,
+    tail log data.
+    """
+    # read_config(config_file, srv_config)
     a_log = tail_logfile(app.config['ACCESS_LOG'])
     resp = make_response(render_template('logs.html',
-                        title=srv_config['title'],
-                        footer=srv_config['footer'],
+                        title=app.config['APP_NAME'],
+                        footer=app.config['APP_FOOTER'],
                         a_log=a_log))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
 
+def mongodb():
+    """
+    Simple form to get and set a note in MongoDB
+    """
+    pass
+
+
+def postgresql():
+    """
+    Simple form to get and set a note in PostgreSql.
+    """
+    pass
+
+
 #
 # REST API
+##############################################################################
 @app.route('/api/echo', methods=['GET'])
 def api_echo():
-    """Build api endpoint for echo data."""
+    """
+    API endpoint for echo data.
+
+    Returns:
+        See index
+    """
     resp = make_response(jsonify(build_response_data()))
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
 
-#
-# REST API
 @app.route('/api/config', methods=['GET'])
 def api_config():
-    """Build api endpoint for config data."""
-    read_config(config_file, srv_config)
-    resp = make_response(jsonify(srv_config))
+    """
+    API endpoint for config data.
+
+    Returns:
+        The complete app.config object.
+        DON'T USE THIS IN A REAL APPLICATION!
+    """
+    # read_config(srv_config)
+    resp = make_response(jsonify_config())
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
 
+#
+# Utiliy functions
+# ############################################################################
 def build_response_data():
     """
     Build a dictionary with timestamp, server ip,
@@ -92,6 +146,9 @@ def get_secret_key():
         Docker secret file or
         Environment variable SECRET_KEY or
         a default value
+    
+    Returns:
+        the secret string
     """
     secret = ''
     try:
@@ -104,57 +161,35 @@ def get_secret_key():
     return secret
 
 
-def read_config(config_file, srv_config):
+def jsonify_config():
     """
-    Read configuration from file and update srv_config dictionary.
-    If no config file exists, a default configuration is used.
+    Return:
+        A JSON representation of the current configuration data.
+    """
+    a_config = {}
+    for key in app.config:
+        a_config[key] = str(app.config[key])
+        # print("app.config[{}]: {}".format(key, a_config[key]))
+    return jsonify(a_config)
+
+
+def tail_logfile(logfile = None):
+    """
+    Read n lines of a logfile.
+
     Args:
-        configuration file
-        configuration dictonary
+        logfile: Name of the logfile, default is None
+
+    Returns:
+        The truncated logfile.
     """
-    try:
-        with open(config_file, 'r') as stream:
-            config_data = (yaml.safe_load(stream))
-            for key in config_data.keys():
-                srv_config[key] = config_data[key]   
-    except Exception as exc:
-        print("Can't read configuration. {}".format(exc))
-
-
-def tail_logfile(logfile=''):
-    """Read n lines of the logfile"""
-    result = "Can't read logfile: {}".format(logfile)
-    lines = 40
-    with open(logfile) as f:
-        # for line in (f.readlines()[-lines:]):
-        #     print(line)
-        result = ''.join(f.readlines()[-lines:])
+    result = "No logfiles available"
+    print("Logfile is {}".format(logfile))
+    lines = app.config['LOG_LINES']
+    if logfile: 
+        try:
+            with open(logfile) as f:
+                result = ''.join(f.readlines()[-lines:])
+        except Exception as exc:
+            print("Can't open logfile. {}".format(exc))
     return result
-
-
-def old_tail_logfile(logfile=''):
-    """Read n lines of the logfile"""
-    result = "Can't read logfile: {}".format(logfile)
-    try:
-        bufsize = 4096
-
-        lines = 5
-        logfsize = os.stat(logfile).st_size
-        print("try to open logfile")
-        iter = 0
-        with open(logfile) as f:
-            if bufsize > logfsize:
-                bufsize = logfsize-1
-            data = []
-            while True:
-                iter +=1
-                print('reading logfile: {} {} {} {} {}'.format(iter, len(data), logfsize, bufsize, f.tell()))
-                f.seek(logfsize-bufsize*iter)
-                data.extend(f.readlines())
-                if len(data) >= lines or f.tell() == 0:
-                    result = ''.join(data[-lines:])
-                    break
-    except Exception as e:
-        result.join("; Caught exception {}".format(e))
-    return result
-
