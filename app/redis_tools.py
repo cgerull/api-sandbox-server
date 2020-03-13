@@ -13,8 +13,11 @@ def get_redis():
     """
     r = None
     if app.config["REDIS_URL"]:
-        print("Connect to Redis at {}".format(app.config["REDIS_URL"]))
-        r = redis.from_url(app.config["REDIS_URL"])
+        try:
+            print("Connect to Redis at {}".format(app.config["REDIS_URL"]))
+            r = redis.from_url(app.config["REDIS_URL"])
+        except Exception as e:
+            print("Error connecting to Redis: {}".format(e))
     return r
 
 def increment_redis_counter(r, counter = 'counter'):
