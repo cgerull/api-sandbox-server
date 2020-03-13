@@ -184,7 +184,6 @@ def tail_logfile(logfile = None):
         The truncated logfile.
     """
     result = "No logfiles available"
-    print("Logfile is {}".format(logfile))
     lines = app.config['LOG_LINES']
     if logfile: 
         try:
