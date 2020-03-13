@@ -28,5 +28,8 @@ def increment_redis_counter(r, counter = 'counter'):
         r: A Redis connection
         counter: The name of the variable to be increased, defaults to counter.
     """
-    c =+ r.get(counter)
-    r.set(counter, c)
+    if r.get(counter):
+        c = int(r.get(counter)) + 1
+        r.set(counter, c)
+    else:
+        r.set(counter, "1")
