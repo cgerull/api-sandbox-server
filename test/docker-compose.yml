@@ -1,0 +1,50 @@
+---
+    # Start RabbitMQ and MariaDB in Docker swarm mode with resource limitations
+    #
+    version: "3.7"
+    # Don't use a named network now,
+    # the default ingres network will do 
+    # for the 3 services.
+    #
+    # networks:
+    #   support-services:
+    #     - driver: overlay
+    #     - ingress
+    
+    volumes:
+        psql_data:
+        portainer_data:
+        redis_data:
+    
+    services:
+        redis:
+            image: redis:5.0-alpine
+            ports:
+                - 6379:6379/tcp
+            volumes:
+                - redis_data:/data
+
+        rabbitmq:
+            image: cgerull/rbmq-image:latest
+            ports:
+                - 15672:15672/tcp
+                - 5672:5672/tcp
+        
+        postgres:
+            image: postgres:9.6.17-alpine
+            ports:
+                - 5432:5432/tcp
+            volumes:
+                - psql_data:/var/lib/postgresql/data
+            environment:
+                - "POSTGRES_USER=db_test"
+                - "POSTGRES_PASSWORD=mySecret123!"
+
+        
+        portainer:
+            image: portainer/portainer:1.23.0
+            ports:
+            - "9000:9000"
+            volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - portainer_data:/data

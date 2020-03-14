@@ -12,6 +12,7 @@ import yaml
 
 from app.redis_tools import get_redis
 from app.redis_tools import increment_redis_counter
+from app.models import Visitor, Message
 
 # Modules constants
 secret_file = '/run/secrets/my_secret_key'
