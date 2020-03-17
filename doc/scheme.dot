@@ -1,0 +1,75 @@
+digraph apisandbox {
+  //rankdir=TB;
+
+
+  // Client-side Apps - #80fc03 (light green)
+  node[fillcolor="#fff4cc" style="filled" fontcolor="black"];
+  call_generator[label="Call generator"]; publisher[label="Queue publisher"];
+  
+    // Html_front_end - #FFEB3B (yellow)
+  node[fillcolor="#ffeba3" style="filled" fontcolor="black"];
+  echo_server[label="{<f0> port 80|<f1> Echo server\n}" shape=Mrecord]; 
+  grafana[label="{<f0> port 80|<f1> Grafana\n}" shape=Mrecord];
+
+  // API Gateways - #fcba03 (dark yellow)
+  node[fillcolor="#fce48b" style="filled" fontcolor="black"];
+  auth_api[label="Auth API"]; echo_server_api[label="Echo Server API"];
+    
+  // Microservices - #911014 (bordeaux)
+  node[fillcolor="#fcdd68" style="filled" fontcolor="black"];
+  queue_viewer[label="{<f0> port 8080|<f1> Queue Viewer}" shape=Mrecord];
+  log_server[label="{<f0> port 8081|<f1> Log Viewer}" shape=Mrecord]; 
+  prometheus[label="{<f0> port 8082|<f1> Prometheus}" shape=Mrecord];
+
+  // Message Queue - #d703fc (purple)
+  node[fillcolor="#edc52d" style="filled" fontcolor="black"];
+  rabbitmq[label="{<f0> port 5672|<f1> RabbitMQ}" shape=Mrecord];
+
+  // Storage - #303F9F (dark blue)
+  node[fillcolor="#ffd433" style="filled" fontcolor="black"];
+  database[label="{<f0> port 5432|<f1> DB}" shape=Mrecord];
+  cache[label="{<f0> port 6379|<f1> Redis}" shape=Mrecord];
+  elk[label="{<f0> \n|<f1> ELK}" shape=Mrecord];
+
+  // Monitoring - #03dbfc (light blue)
+  node[fillcolor="#edc52d" style="filled" fontcolor="black"];
+  
+  
+  
+  subgraph client_side_apps {
+      call_generator -> {echo_server_api, auth_api} [label=" port 80"];
+      publisher -> {rabbitmq};
+      
+      {rank=same; call_generator publisher};
+  }
+  
+  subgraph front_end {
+    label="Front end";
+    
+    subgraph api_gateways {
+        echo_server_api -> {cache, log_server, database, queue_viewer};
+        auth_api -> {echo_server, database};
+        {rank=same; echo_server_api auth_api}
+    }
+
+    subgraph html_gateways {
+        echo_server -> {cache, log_server, database, queue_viewer}
+        grafana -> {prometheus, elk}
+        {rank=same; echo_server grafana}
+    }
+  }
+
+  subgraph microservices {
+      prometheus -> {cache, database};
+      log_server -> {elk, database};
+      queue_viewer -> {rabbitmq};
+  }
+
+  subgraph backend {
+      database;
+      rabbitmq;
+      cache;
+      elk;
+      {rank=same database rabbitmq cache elk}
+  }
+}

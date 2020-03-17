@@ -7,7 +7,7 @@ class Visitor(db.Model):
     counter = db.Column(db.Integer)
 
     def __repr__(self):
-        return '<Visitor: {} visited {} times.>'.format(self.cookie, self.counter)  
+        return '<Visitor: {} visited {} times.>'.format(self.cookie, self.counter)
 
 
 
@@ -18,7 +18,7 @@ class Message(db.Model):
 
     __tablename__ = 'message'
 
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     author = db.Column(db.String, index=True)
     message = db.Column(db.String)
 
