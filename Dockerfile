@@ -4,17 +4,24 @@ FROM cgerull/minimal-flask-server:1.0.1
 USER web
 WORKDIR /home/web
 
-COPY --chown=1000 . /home/web/
+COPY --chown=1000 app /home/web/app
+COPY --chown=1000 config.py /home/web/
+COPY --chown=1000 LICENSE /home/web/
+COPY --chown=1000 requirements.txt /home/web/
+COPY --chown=1000 run_gunicorn.sh /home/web/
+COPY --chown=1000 wsgi.py /home/web/
 
 ENV PATH=$PATH:/home/web/.local/bin \
     PORT=8080 \
-    ERRLOG=- \
-    ACCESSLOG=- \
+    ERROR_LOG=- \
+    ACCESS_LOG=- \
     LOGFORMAT="%(h)s %(l)s %(t)s %({Server-IP}o)s %(l)s %(r)s %(s)s %(b)s %(a)s" \
     LOGLVL=INFO \
     SECRET_KEY=DockerFileSecret
 
-EXPOSE 8080
+RUN pip install -r requirements.txt
+
+EXPOSE ${PORT}
 
 #USER root
 #

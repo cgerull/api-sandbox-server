@@ -11,25 +11,25 @@ def get_redis():
     """
     Return a connection to a Redis server if defined.
     """
-    r = None
+    redis_connection = None
     if app.config["REDIS_URL"]:
         try:
             print("Connect to Redis at {}".format(app.config["REDIS_URL"]))
-            r = redis.from_url(app.config["REDIS_URL"])
-        except Exception as e:
-            print("Error connecting to Redis: {}".format(e))
-    return r
+            redis_connection = redis.from_url(app.config["REDIS_URL"])
+        except Exception as exc:
+            print("Error connecting to Redis: {}".format(exc))
+    return redis_connection
 
-def increment_redis_counter(r, counter = 'counter'):
+def increment_redis_counter(redis_connection, counter='counter'):
     """
     Increase a counter variable in Redis.
 
     Args:
-        r: A Redis connection
+        redis_connection: A Redis connection
         counter: The name of the variable to be increased, defaults to counter.
     """
-    if r.get(counter):
-        c = int(r.get(counter)) + 1
-        r.set(counter, c)
+    if redis_connection.get(counter):
+        cnt = int(redis_connection.get(counter)) + 1
+        redis_connection.set(counter, cnt)
     else:
-        r.set(counter, "1")
+        redis_connection.set(counter, "1")

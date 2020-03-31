@@ -25,7 +25,9 @@
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
                     <li><a href="{{ url_for('index') }}">{{ ('Home') }}</a></li>
+                    {% if (None != config.ACCESS_LOG) %}
                     <li><a href="{{ url_for('logs') }}">{{ ('Logs') }}</a></li>
+                    {% endif %}
                 </ul>
 
             </div>

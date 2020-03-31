@@ -1,27 +1,26 @@
 """
 Route module for timeconverter web api
 """
-from app import app
-from flask import (request, jsonify, render_template, redirect,
-                   url_for, flash, make_response)
-
 from datetime import datetime
 import socket
-import os
-import yaml
+from app import app
+from flask import (request, jsonify, render_template, redirect,
+                   url_for, make_response)
+# import os
+# import yaml
 
 from app.redis_tools import get_redis
 from app.redis_tools import increment_redis_counter
 
 # Modules constants
-secret_file = '/run/secrets/my_secret_key'
-config_file = '/srv-config'
-srv_config = {
-    'title': 'Echo Webserver',
-    'footer': 'Default configuration'
-}
-localhost = socket.gethostname()
-my_redis = get_redis()
+# secret_file = '/run/secrets/my_secret_key'
+# config_file = '/srv-config'
+# srv_config = {
+#     'title': 'Echo Webserver',
+#     'footer': 'Default configuration'
+# }
+LOCALHOST = socket.gethostname()
+MY_REDIS = get_redis()
 
 
 #
@@ -34,27 +33,27 @@ def index():
     Respond as echo with:
         timestamp,
         local_ip,
-        container_name / hostname,
+        container_name / LOCALHOST,
         secret,
         remote_ip: requester ip or proxy ip,
         client_ip
 
-    If a Redis server is defined, keeps a dynamic count of pageviews 
+    If a Redis server is defined, keeps a dynamic count of pageviews
     for HTML and API echo requests.
     """
     # read_config(srv_config)
     page_view = 0
     response_data = build_response_data()
-    if my_redis:
-        increment_redis_counter(my_redis, app.config['REDIS_HTML_COUNTER'])
-        page_view = int(my_redis.get(app.config['REDIS_HTML_COUNTER']))
-    
+    if MY_REDIS:
+        increment_redis_counter(MY_REDIS, app.config['REDIS_HTML_COUNTER'])
+        page_view = int(MY_REDIS.get(app.config['REDIS_HTML_COUNTER']))
+
     resp = make_response(render_template('index.html',
                         title=app.config['APP_NAME'],
                         footer=app.config['APP_FOOTER'],
                         resp=response_data,
                         page_view=page_view))
-    resp.headers['Server-IP'] = socket.gethostbyname(localhost)
+    resp.headers['Server-IP'] = socket.gethostbyname(LOCALHOST)
     return resp
 
 
@@ -72,7 +71,7 @@ def logs():
                         title=app.config['APP_NAME'],
                         footer=app.config['APP_FOOTER'],
                         a_log=a_log))
-    resp.headers['Server-IP'] = socket.gethostbyname(localhost)
+    resp.headers['Server-IP'] = socket.gethostbyname(LOCALHOST)
     return resp
 
 
@@ -80,14 +79,14 @@ def mongodb():
     """
     Simple form to get and set a note in MongoDB
     """
-    pass
+    return None
 
 
 def postgresql():
     """
     Simple form to get and set a note in PostgreSql.
     """
-    pass
+    return None
 
 
 #
@@ -102,7 +101,7 @@ def api_echo():
         See index
     """
     resp = make_response(jsonify(build_response_data()))
-    resp.headers['Server-IP'] = socket.gethostbyname(localhost)
+    resp.headers['Server-IP'] = socket.gethostbyname(LOCALHOST)
     return resp
 
 
@@ -117,7 +116,19 @@ def api_config():
     """
     # read_config(srv_config)
     resp = make_response(jsonify_config())
-    resp.headers['Server-IP'] = socket.gethostbyname(localhost)
+    resp.headers['Server-IP'] = socket.gethostbyname(LOCALHOST)
+    return resp
+
+
+@app.route('/api/req_headers', methods=['GET'])
+def api_headers():
+    """
+    API endpoint for request headers.
+    Returns:
+        Request headers in json represantation.
+    """
+    resp = make_response(get_headers(request.environ))
+    resp.headers['Server-IP'] = socket.gethostbyname(LOCALHOST)
     return resp
 
 
@@ -129,11 +140,11 @@ def build_response_data():
     Build a dictionary with timestamp, server ip,
     server name, secret and requester ip.
     """
-    localhost = socket.gethostname()
+    hostname = socket.gethostname()
     return {
         'now': datetime.now().isoformat(sep=' '),
-        'local_ip': socket.gethostbyname(localhost),
-        'container_name': localhost,
+        'local_ip': socket.gethostbyname(LOCALHOST),
+        'container_name': hostname,
         'secret': get_secret_key(),
         'remote_ip': request.remote_addr,
         'client_ip': request.access_route[0]
@@ -146,17 +157,15 @@ def get_secret_key():
         Docker secret file or
         Environment variable SECRET_KEY or
         a default value
-    
+
     Returns:
         the secret string
     """
     secret = ''
     try:
-        f = open(secret_file, 'r')
-        secret = f.read()
-    except:
-        # no file, just return empty string
-        # secret = os.environ.get('SECRET_KEY') or 'Only_the_default_secret_key'
+        secret_file = open(app.config['SECRET_FILE'], 'r')
+        secret = secret_file.read()
+    except IOError as ex:
         secret = app.config['SECRET_KEY']
     return secret
 
@@ -173,7 +182,7 @@ def jsonify_config():
     return jsonify(a_config)
 
 
-def tail_logfile(logfile = None):
+def tail_logfile(logfile=None):
     """
     Read n lines of a logfile.
 
@@ -185,10 +194,20 @@ def tail_logfile(logfile = None):
     """
     result = "No logfiles available"
     lines = app.config['LOG_LINES']
-    if logfile: 
+    if logfile:
         try:
-            with open(logfile) as f:
-                result = ''.join(f.readlines()[-lines:])
-        except Exception as exc:
+            with open(logfile) as l_file:
+                result = ''.join(l_file.readlines()[-lines:])
+        except IOError as exc:
             print("Can't open logfile. {}".format(exc))
     return result
+
+
+def get_headers(req_headers):
+    """
+    Build JSON object from request headers.
+    """
+    headers = {}
+    for key in req_headers:
+        headers[key] = str(req_headers[key])
+    return jsonify(headers)
