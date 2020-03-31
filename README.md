@@ -17,4 +17,6 @@ Collection of containers for API and deployment testing.
  
 
 ---
-Development: ![Docker Release Image](https://github.com/cgerull/api-sandbox-server/workflows/Docker%20Release%20Image/badge.svg?branch=development)
+## Build status
+
+- Development:   ![Docker Release Image](https://github.com/cgerull/api-sandbox-server/workflows/Docker%20Release%20Image/badge.svg?branch=development)
