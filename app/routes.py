@@ -2,8 +2,8 @@
 Route module for timeconverter web api
 """
 import socket
-import os
-import yaml
+# import os
+# import yaml
 from datetime import datetime
 
 from app import app
@@ -122,6 +122,18 @@ def api_config():
     resp.headers['Server-IP'] = socket.gethostbyname(localhost)
     return resp
 
+@app.route('/api/req_headers', methods=['GET'])
+def api_headers():
+    """
+    API endpoint for request headers.
+
+    Returns:
+        Request headers in json represantation.
+    """
+    resp = make_response(get_headers(request.environ))
+    resp.headers['Server-IP'] = socket.gethostbyname(localhost)
+    return resp
+
 
 #
 # Utiliy functions
@@ -192,3 +204,12 @@ def tail_logfile(logfile=None):
         except Exception as exc:
             print("Can't open logfile. {}".format(exc))
     return result
+
+def get_headers(req_headers):
+    """
+    Build JSON object from request headers.
+    """
+    headers = {}
+    for key in req_headers:
+        headers[key] = str(req_headers[key])
+    return jsonify(headers)
